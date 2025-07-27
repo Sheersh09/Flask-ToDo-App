@@ -39,7 +39,7 @@ def home():
         db.session.add(todo)
         db.session.commit()
     
-    allTodo = Todo.query.filter_by(session_id=session['user_id'].all())
+    allTodo = Todo.query.filter_by(session_id=session['user_id']).all()
     return render_template('index.html',allTodo=allTodo)
 
 
