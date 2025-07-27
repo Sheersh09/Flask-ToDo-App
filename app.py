@@ -35,7 +35,7 @@ def home():
     if request.method=="POST":
         title = request.form['title']
         desc = request.form['desc']
-        todo= Todo(title=title, desc=desc)#type:ignore
+        todo= Todo(title=title, desc=desc, session_id=session['user_id'])#type:ignore
         db.session.add(todo)
         db.session.commit()
     
