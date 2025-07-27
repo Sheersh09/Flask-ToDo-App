@@ -1,9 +1,18 @@
-from flask import Flask,render_template,request,redirect
+from flask import Flask,render_template,request,redirect,session
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import os
+import uuid
 
 app = Flask(__name__)
+app.secret_key='4093c13c20c9b3f8b803d8db1b6c80bf'
+
+@app.before_request
+def assign_session_id():
+    if 'user_id' not in session:
+        session['user_id'] = str(uuid.uuid4())  # Assign unique session ID
+
+
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(basedir, "todo.db")
 
@@ -15,6 +24,7 @@ class Todo(db.Model):
     title= db.Column(db.String(200), nullable=False)
     desc= db.Column(db.String(500), nullable=False)
     date_created= db.Column(db.DateTime,default=datetime.utcnow)
+    session_id=db.Column(db.String(100),nullable=False)
 
     def __repr__(self) -> str:
         return f"{self.sno} - {self.title}"
@@ -29,18 +39,13 @@ def home():
         db.session.add(todo)
         db.session.commit()
     
-    allTodo = Todo.query.all()
+    allTodo = Todo.query.filter_by(session_id=session['user_id'].all())
     return render_template('index.html',allTodo=allTodo)
-
-@app.route('/show')
-def products():
-    allTodo = Todo.query.all()
-    print(allTodo)
-    return 'this is products page'
 
 
 @app.route('/update/<int:sno>',methods=['GET','POST'])
 def update(sno):
+    todo = Todo.query.filter_by(sno=sno, session_id=session['user_id']).first_or_404()
     if request.method=="POST":
         title = request.form['title']
         desc = request.form['desc']
@@ -57,7 +62,7 @@ def update(sno):
 
 @app.route('/delete/<int:sno>')
 def delete(sno):
-    todo = Todo.query.filter_by(sno=sno).first()
+    todo = Todo.query.filter_by(sno=sno,session_id=session['user_id']).first_or_404()
     db.session.delete(todo)
     db.session.commit()
     return redirect("/")
